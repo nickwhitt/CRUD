@@ -4,9 +4,12 @@
  *
  * Provides a basic database object layer mapping a table row.
  *
- * @author Nicholas Whitt
+ * Depends on an existing mysqli object named $mysqli.
+ *
+ * @author Nicholas Whitt <nick.whitt@gmail.com>
  * @copyright Copyright (c) 2012, Nicholas Whitt
- * @license http://www.gnu.org/licenses/lgpl.html
+ * @link https://github.com/nickwhitt/CRUD Source
+ * @license http://www.gnu.org/licenses/lgpl.html Lesser General Public License, version 3
  */
 
 class CRUD {

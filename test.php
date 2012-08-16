@@ -10,6 +10,12 @@ require_once 'Query.php';
 
 CRUD\Query::init('mysql:dbname=crud_test;host=127.0.0.1', 'root', 'root');
 
+try {
+	$model = new Crud\ActiveModel('fail');
+} catch (Exception $e) {
+	var_dump('Expected Exception: ' . $e->getMessage());
+}
+
 $model = new CRUD\ActiveModel('test');
 var_dump($model);
 
@@ -19,5 +25,7 @@ var_dump($row);
 try {
 	$row = new CRUD\ActiveModel('test', 2);
 } catch (Exception $e) {
-	echo "<table>$e->xdebug_message</table>";
+	var_dump('Expected Exception: ' . $e->getMessage());
 }
+
+var_dump('Test Complete');

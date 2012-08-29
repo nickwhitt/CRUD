@@ -271,7 +271,7 @@ class CRUD {
 		while ($attribute = $result->fetch_object()) {
 			if ($attribute->Key == 'PRI') {
 				$this->primary_key = $attribute->Field;
-			} elseif (is_numeric($attribute->Default)) {
+			} elseif (is_numeric($attribute->Default) AND strpos($attribute->Default, '0') !== 0) {
 				if (intval($attribute->Default) == floatval($attribute->Default)) {
 					$this->attributes[$attribute->Field] = (int) $attribute->Default;
 				} else {
@@ -305,7 +305,7 @@ class CRUD {
 		
 		$row = $result->fetch_object();
 		foreach ($this->attributes as $attribute => $value) {
-			if (is_numeric($row->$attribute)) {
+			if (is_numeric($row->$attribute) AND strpos($row->$attribute, '0') !== 0) {
 				if (intval($row->$attribute) == floatval($row->$attribute)) {
 					$this->attributes[$attribute] = (int) $row->$attribute;
 				} else {

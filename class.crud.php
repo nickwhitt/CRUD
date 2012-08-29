@@ -124,7 +124,9 @@ class CRUD {
 		
 		$values = array();
 		foreach ($this->attributes as $value) {
-			$values[] = is_null($value) ? 'NULL' : sprintf('"%s"', $mysqli->real_escape_string($value));
+			$values[] = $this->is_reserved($value)
+				? $this->to_reserved($value)
+				: sprintf('"%s"', $mysqli->real_escape_string($value));
 		}
 		
 		if (!$mysqli->query(sprintf(
@@ -132,7 +134,7 @@ class CRUD {
 			$mysqli->real_escape_string($this->table),
 			implode(',', array_keys($this->attributes)),
 			implode(',', $values)
-		))) {
+		), TRUE)) {
 			return FALSE;
 		}
 		
@@ -158,7 +160,9 @@ class CRUD {
 			$values[] = sprintf(
 				'`%s` = %s',
 				$mysqli->real_escape_string($attribute),
-				is_null($value) ? 'NULL' : sprintf('"%s"', $mysqli->real_escape_string($value))
+				$this->is_reserved($value)
+					? $this->to_reserved($value)
+					: sprintf('"%s"', $mysqli->real_escape_string($value))
 			);
 		}
 		
@@ -298,5 +302,36 @@ class CRUD {
 				$this->attributes[$attribute] = $row->$attribute;
 			}
 		}
+	}
+	
+	/**
+	 * Tests if the given value is a MySQL keyword
+	 *
+	 * @param mixed $value
+	 * @return bool
+	 */
+	protected function is_reserved($value) {
+		$reserved = array('current_timestamp');
+		if (is_null($value) OR in_array(strtolower($value), $reserved)) {
+			return TRUE;
+		}
+		
+		return FALSE;
+	}
+	
+	/**
+	 * Converts PHP values into MySQL keywords
+	 *
+	 * Used to distinguish keywords such as NULL from NULL php values.
+	 *
+	 * @param mixed $value
+	 * @return mixed
+	 */
+	protected function to_reserved($value) {
+		if (is_null($value)) {
+			return 'NULL';
+		}
+		
+		return strtoupper($value);
 	}
 }

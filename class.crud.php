@@ -75,6 +75,19 @@ class CRUD {
 	}
 	
 	/**
+	 * Helper function for proper bool formatting
+	 *
+	 * Maps Yes/No to 1/0 database values. Default mapping can be overridden.
+	 *
+	 * @param str $attribute
+	 * @parram array $map
+	 * @return mixed
+	 */
+	public function display_bool($attribute, array $map=array('No', 'Yes')) {
+		return $map[$this->$attribute];
+	}
+	
+	/**
 	 * Generic setter method
 	 *
 	 * @param str $property
@@ -134,7 +147,7 @@ class CRUD {
 			$mysqli->real_escape_string($this->table),
 			implode(',', array_keys($this->attributes)),
 			implode(',', $values)
-		), TRUE)) {
+		))) {
 			return FALSE;
 		}
 		

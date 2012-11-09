@@ -5,9 +5,19 @@
  * @author Nick Whitt
  */
 
-class ActiveSet {
-	protected $filters = array();
+namespace CRUD;
+class ActiveSet extends Base {
 	protected $conditions = array();
+	
+	/**
+	 * Statically generate class constructor
+	 *
+	 * @param void
+	 * @return static extended class
+	 */
+	public static function create($table) {
+		return new static($table);
+	}
 	
 	/**
 	 * Query termination method
@@ -17,8 +27,23 @@ class ActiveSet {
 	 * @param int $style
 	 * @return mixed
 	 */
-	public function fetch($style=\PDO::FETCH_OBJ) {
+	public function fetchAll($class=NULL, $style=\PDO::FETCH_OBJ) {
+		$sql = sprintf(
+			'select %s from %s %s order by %s',
+			$this->primary_key,
+			$this->table,
+			$this->buildWhere(),
+			$this->primary_key
+		);
 		
+		$records = array();
+		foreach (Query::query($sql, $this->conditions, $style) as $row) {
+			$records[] = is_null($class)
+				? new ActiveModel($this->table, $row->id)
+				: new $class($row->id);
+		}
+		
+		return $records;
 	}
 	
 	/**
@@ -28,12 +53,15 @@ class ActiveSet {
 	 * @param mixed $condition
 	 * @return self
 	 */
-	public function where($statement, $condition) {
-		$this->filters[] = $statement;
-		$this->conditions = array_merge(
-			$this->conditions,
-			is_array($condition) ? $condition : array($condition)
+	protected function buildWhere() {
+		return empty($this->conditions) ? '' : sprintf(
+			'where %s',
+			implode(' and ', array_map(array('self', 'buildCondition'), array_keys($this->conditions)))
 		);
+	}
+	
+	protected function buildCondition($value) {
+		return sprintf('`%s` = %s', substr($value, 1), $value);
 	}
 	
 	/**
@@ -47,13 +75,15 @@ class ActiveSet {
 	 * @return self
 	 */
 	public function filterBy($attribute, $condition, $negate=FALSE) {
-		
+		return $this->filterByString($attribute, $condition, $negate);
 	}
 	
 	public function filterByString($attribute, $condition, $negate=FALSE) {
 		// where X [!]= :Y
 		// where X [not] like :Y
 		// where X is [not] null
+		$this->conditions[":$attribute"] = $condition;
+		return $this;
 	}
 	
 	public function filterByList($attribute, array $condition, $negate=FALSE) {

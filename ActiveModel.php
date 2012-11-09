@@ -9,14 +9,9 @@
  */
 
 namespace CRUD;
-class ActiveModel {
-	protected $table;
-	protected $primary_key;
-	protected $attributes;
-	
+class ActiveModel extends Base {
 	public function __construct($table, $id=NULL) {
-		$this->table = $table;
-		$this->getTableStructure();
+		parent::__construct($table);
 		
 		if (!is_null($id)) {
 			$this->__set($this->primary_key, $id);
@@ -152,26 +147,6 @@ class ActiveModel {
 	protected function requireNotExists() {
 		if ($this->exists()) {
 			throw new \Exception('Record already exists');
-		}
-	}
-	
-	protected function getTableStructure() {
-		$this->attributes = array();
-		
-		foreach (Query::describeTable($this->table) as $attribute) {
-			if ($attribute->Key == 'PRI') {
-				$this->primary_key = $attribute->Field;
-			}
-			
-			if (is_numeric($attribute->Default)) {
-				if (intval($attribute->Default) == floatval($attribute->Default)) {
-					$this->attributes[$attribute->Field] = (int) $attribute->Default;
-				} else {
-					$this->attributes[$attribute->Field] = (float) $attribute->Default;
-				}
-			} else {
-				$this->attributes[$attribute->Field] = $attribute->Default;
-			}
 		}
 	}
 	

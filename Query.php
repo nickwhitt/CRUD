@@ -118,4 +118,54 @@ class Query {
 			array(':id' => $id)
 		)->fetch($style);
 	}
+	
+	/**
+	 * Creates a conditional predicate for use within a where clause
+	 *
+	 * @param str $column
+	 * @param bool $negate
+	 * @return str
+	 */
+	public static function buildEqualCondition($column, $negate=FALSE) {
+		return sprintf('%s %s= ?', $column, $negate === FALSE ? '' : '!');
+	}
+	
+	/**
+	 * Creates a comparison predicate for use within a where clause
+	 *
+	 * @param str $column
+	 * @param bool $negate
+	 * @return str
+	 */
+	public static function buildLikeCondition($column, $negate=FALSE) {
+		return sprintf('%s %s like ', $column, $negate === FALSE ? '' : 'not');
+	}
+	
+	/**
+	 * Creates a conditional list predicate for use within a where clause
+	 *
+	 * @param str $column
+	 * @param int $count
+	 * @param bool $negate
+	 * @return str
+	 */
+	public static function buildInCondition($column, $count, $negate=FALSE) {
+		return sprintf(
+			'%s %s in (%s)',
+			$column,
+			$negate === FALSE ? '' : 'not',
+			implode(',', array_fill(0, $count, '?'))
+		);
+	}
+	
+	/**
+	 * Creates a null predicate for use within a where clause
+	 *
+	 * @param str $column
+	 * @param bool $negate
+	 * @return str
+	 */
+	public static function buildNullCondition($column, $negate=FALSE) {
+		return sprintf('%s is %s null', $column, $negate === FALSE ? '' : 'not');
+	}
 }

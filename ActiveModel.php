@@ -117,12 +117,26 @@ class ActiveModel extends Base {
 	}
 	
 	
+	/**
+	 * Retrieves the primary key value
+	 *
+	 * @param void
+	 * @return mixed
+	 */
 	public function primary_key() {
 		return $this->__get($this->primary_key);
 	}
 	
+	/**
+	 * Tests if the object exists in the database
+	 *
+	 * Determined by the presence of a primary key.
+	 *
+	 * @param void
+	 * @return bool
+	 */
 	public function exists() {
-		return $this->primary_key();
+		return (bool) $this->primary_key();
 	}
 	
 	

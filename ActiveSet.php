@@ -29,6 +29,7 @@ class ActiveSet extends Base {
 	 *
 	 * Executes the constructed query and returns the $styled results
 	 *
+	 * @param mixed $class
 	 * @param int $style
 	 * @return mixed
 	 */
@@ -36,11 +37,27 @@ class ActiveSet extends Base {
 		$records = array();
 		foreach (Query::query($this->buildStatement(), $this->parameters, $style) as $row) {
 			$records[] = is_null($class)
-				? new ActiveModel($this->table, $row->id)
-				: new $class($row->id);
+				? new ActiveModel($this->table, $row->{$this->primary_key})
+				: new $class($row->{$this->primary_key});
 		}
 		
 		return $records;
+	}
+	
+	/**
+	 * Query termination method
+	 *
+	 * Executes the contructed query and returns the $styled result
+	 *
+	 * @param mixed $class
+	 * @param int $style
+	 * @return mixed
+	 */
+	public function fetchOne($class=NULL, $style=\PDO::FETCH_OBJ) {
+		$row = Query::prepare($this->buildStatement(), $this->parameters)->fetch($style);
+		return is_null($class)
+			? new ActiveModel($this->table, $row->{$this->primary_key})
+			: new $class($row->{$this->primary_key});
 	}
 	
 	/**

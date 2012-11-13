@@ -128,6 +128,11 @@ class ActiveSet extends Base {
 	 * @return self
 	 */
 	public function filterByList($attribute, array $conditions, $negate=FALSE) {
+		if (empty($conditions)) {
+			trigger_error('Attempting to filter by an empty list');
+			return $this;
+		}
+		
 		$this->conditions[] = Query::buildInCondition($attribute, count($conditions), $negate);
 		foreach ($conditions as $paramter) {
 			$this->parameters[] = $paramter;

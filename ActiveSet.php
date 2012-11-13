@@ -127,8 +127,8 @@ class ActiveSet extends Base {
 	 * @param bool $negate
 	 * @return self
 	 */
-	public function filterByList($attribute, array $condition, $negate=FALSE) {
-		$this->conditions[] = Query::buildInCondition($attribute, count($condition), $negate);
+	public function filterByList($attribute, array $conditions, $negate=FALSE) {
+		$this->conditions[] = Query::buildInCondition($attribute, count($conditions), $negate);
 		foreach ($conditions as $paramter) {
 			$this->parameters[] = $paramter;
 		}

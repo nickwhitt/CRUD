@@ -10,8 +10,8 @@
 
 namespace CRUD;
 class ActiveModel extends Base {
-	public function __construct($table, $id=NULL) {
-		parent::__construct($table);
+	public function __construct(Query $dba, $table, $id=NULL) {
+		parent::__construct($dba, $table);
 		
 		if (!is_null($id)) {
 			$this->__set($this->primary_key, $id);
@@ -48,7 +48,7 @@ class ActiveModel extends Base {
 			$values[":$attribute"] = is_null($value) ? 'NULL' : $value;
 		}
 		
-		return $this->__set($this->primary_key, Query::insert(sprintf(
+		return $this->__set($this->primary_key, $this->dba->insert(sprintf(
 			'insert into %s (%s) values (%s)',
 			$this->table,
 			implode(', ', $columns),
@@ -75,7 +75,7 @@ class ActiveModel extends Base {
 			$updates[] = sprintf('%s = %s', $attribute, ":$attribute");
 		}
 		
-		return Query::update(sprintf(
+		return $this->dba->update(sprintf(
 			'update %s set %s where %s = %s limit 1',
 			$this->table,
 			implode(', ', $updates),
@@ -91,7 +91,7 @@ class ActiveModel extends Base {
 	 * @return bool
 	 */
 	public function delete() {
-		return Query::delete(sprintf(
+		return $this->dba->delete(sprintf(
 			'delete from %s where %s = %s limit 1',
 			$this->table,
 			$this->primary_key,
@@ -165,7 +165,7 @@ class ActiveModel extends Base {
 	}
 	
 	protected function fetchAttributes() {
-		if (!$row = Query::fetchByPrimaryKey($this->table, $this->primary_key(), $this->primary_key)) {
+		if (!$row = $this->dba->fetchByPrimaryKey($this->table, $this->primary_key(), $this->primary_key)) {
 			throw new \Exception("Cannot instantiate non-existent record");
 		}
 		

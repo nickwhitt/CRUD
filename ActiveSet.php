@@ -20,8 +20,8 @@ class ActiveSet extends Base {
 	 * @param void
 	 * @return static extended class
 	 */
-	public static function create($table) {
-		return new static($table);
+	public static function create(Query $dba, $table) {
+		return new static($dba, $table);
 	}
 	
 	/**
@@ -35,7 +35,7 @@ class ActiveSet extends Base {
 	 */
 	public function fetchAll($class=NULL, $style=\PDO::FETCH_OBJ) {
 		$records = array();
-		foreach (Query::query($this->buildStatement(), $this->parameters, $style) as $row) {
+		foreach ($this->dba->query($this->buildStatement(), $this->parameters, $style) as $row) {
 			$records[] = is_null($class)
 				? new ActiveModel($this->table, $row->{$this->primary_key})
 				: new $class($row->{$this->primary_key});
@@ -54,7 +54,7 @@ class ActiveSet extends Base {
 	 * @return mixed
 	 */
 	public function fetchOne($class=NULL, $style=\PDO::FETCH_OBJ) {
-		$row = Query::prepare($this->buildStatement(), $this->parameters)->fetch($style);
+		$row = $this->dba->prepare($this->buildStatement(), $this->parameters)->fetch($style);
 		return is_null($class)
 			? new ActiveModel($this->table, $row->{$this->primary_key})
 			: new $class($row->{$this->primary_key});
@@ -97,8 +97,8 @@ class ActiveSet extends Base {
 	public function filterByString($attribute, $condition, $negate=FALSE) {
 		$this->parameters[] = $condition;
 		$this->conditions[] = strpos($condition, '%') !== FALSE
-			? Query::buildLikeCondition($attribute, $negate)
-			: Query::buildEqualCondition($attribute, $negate);
+			? $this->dba->buildLikeCondition($attribute, $negate)
+			: $this->dba->buildEqualCondition($attribute, $negate);
 		
 		return $this;
 	}
@@ -113,7 +113,7 @@ class ActiveSet extends Base {
 	 * @return self
 	 */
 	public function filterByNull($attribute, $negate=FALSE) {
-		$this->conditions[] = Query::buildNullCondition($attribute, $negate);
+		$this->conditions[] = $this->dba->buildNullCondition($attribute, $negate);
 		return $this;
 	}
 	
@@ -133,7 +133,7 @@ class ActiveSet extends Base {
 			return $this;
 		}
 		
-		$this->conditions[] = Query::buildInCondition($attribute, count($conditions), $negate);
+		$this->conditions[] = $this->dba->buildInCondition($attribute, count($conditions), $negate);
 		foreach ($conditions as $paramter) {
 			$this->parameters[] = $paramter;
 		}

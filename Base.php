@@ -10,12 +10,15 @@
 
 namespace CRUD;
 abstract class Base {
+	protected $dba;
 	protected $table;
 	protected $primary_key;
 	protected $attributes;
 	
-	public function __construct($table) {
+	public function __construct(Query $dba, $table) {
+		$this->dba = $dba;
 		$this->table = $table;
+		
 		$this->getTableStructure();
 	}
 	
@@ -23,7 +26,7 @@ abstract class Base {
 	protected function getTableStructure() {
 		$this->attributes = array();
 		
-		foreach (Query::describeTable($this->table) as $attribute) {
+		foreach ($this->dba->describeTable($this->table) as $attribute) {
 			if ($attribute->Key == 'PRI') {
 				$this->primary_key = $attribute->Field;
 			}

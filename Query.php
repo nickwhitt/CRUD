@@ -14,4 +14,6 @@ interface Query {
 	public function update($table, $id, array $columns, array $values, $primary_key='id');
 	public function delete($table, $id, $primary_key='id');
 	public function describeTable($table, $style=\PDO::FETCH_OBJ);
+	public function selectKeys($table, array $conditions, array $values, array $orders, $primary_key='id', $style=\PDO::FETCH_OBJ);
+	public function selectKey($table, array $conditions, array $values, array $orders, $primary_key='id', $style=\PDO::FETCH_OBJ);
 }

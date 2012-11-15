@@ -103,6 +103,36 @@ class MysqlLayer extends DatabaseLayer {
 	}
 	
 	/**
+	 * Retrieves a list of records by condition
+	 *
+	 * @param str $table
+	 * @param array $conditions
+	 * @param array $values
+	 * @param array $orders
+	 * @param str $primary_key
+	 * @param int $style
+	 * @return array
+	 */
+	public function selectKeys($table, array $conditions, array $values, array $orders, $primary_key='id', $style=\PDO::FETCH_OBJ) {
+		return $this->select($primary_key, $table, $conditions, $values, $orders)->fetchAll($style);
+	}
+	
+	/**
+	 * Retrives a single record by condition
+	 *
+	 * @param str $table
+	 * @param array $conditions
+	 * @param array $values
+	 * @param array $orders
+	 * @param str $primary_key
+	 * @param int $style
+	 * @return mixed
+	 */
+	public function selectKey($table, array $conditions, array $values, array $orders, $primary_key='id', $style=\PDO::FETCH_OBJ) {
+		return $this->select($primary_key, $table, $conditions, $values, $orders)->fetch($style);
+	}
+	
+	/**
 	 * Retrieves all fields from a single record
 	 *
 	 * @param str $table
@@ -116,8 +146,8 @@ class MysqlLayer extends DatabaseLayer {
 			sprintf(
 				'select * from `%s` %s',
 				$table,
-				$this->buildWhereClause(array(
-					$this->buildEqualCondition($primary_key)
+				self::buildWhereClause(array(
+					self::buildEqualCondition($primary_key)
 				))
 			),
 			array($id)
@@ -144,7 +174,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @return str
 	 */
 	public static function buildLikeCondition($column, $negate=FALSE) {
-		return sprintf('%s %s like ', $column, $negate === FALSE ? '' : 'not');
+		return sprintf('%s %s like ?', $column, $negate === FALSE ? '' : 'not');
 	}
 	
 	/**
@@ -175,6 +205,32 @@ class MysqlLayer extends DatabaseLayer {
 		return sprintf('%s is %s null', $column, $negate === FALSE ? '' : 'not');
 	}
 	
+	/**
+	 * Generates the where clause
+	 *
+	 * @param array $conditions
+	 * @return str
+	 */
+	public static function buildWhereClause(array $conditions) {
+		return empty($conditions) ? '' : sprintf(
+			'where %s',
+			implode(' and ', $conditions)
+		);
+	}
+	
+	/**
+	 * Generates the order clause
+	 *
+	 * @param array $orders
+	 * @return str
+	 */
+	public static function buildOrderClause(array $orders) {
+		return empty($orders) ? '' : sprintf(
+			'order by %s',
+			implode(', ', $orders)
+		);
+	}
+	
 	
 	/**
 	 * Executes a Prepared Statement
@@ -195,15 +251,24 @@ class MysqlLayer extends DatabaseLayer {
 	}
 	
 	/**
-	 * Generates the where clause
+	 * Executes a prepared select statement
 	 *
-	 * @param void
-	 * @return str
+	 * @param str $column
+	 * @param str $table
+	 * @param array $conditions
+	 * @param array $values
+	 * @param array $orders
+	 * @return PODStatement
 	 */
-	protected function buildWhereClause(array $conditions) {
-		return empty($conditions) ? '' : sprintf(
-			'where %s',
-			implode(' and ', $conditions)
+	protected function select($column, $table, array $conditions, array $values, array $orders) {
+		return $this->run(sprintf(
+				'select `%s` from `%s` %s %s',
+				$column,
+				$table,
+				self::buildWhereClause($conditions),
+				self::buildOrderClause($orders)
+			),
+			$values
 		);
 	}
 }

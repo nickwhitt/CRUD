@@ -139,7 +139,7 @@ class ActiveModel extends ActiveBase {
 	}
 	
 	protected function fetchAttributes() {
-		if (!$row = $this->dba->fetchByPrimaryKey($this->table, $this->primary_key(), $this->primary_key)) {
+		if (!$row = $this->dba->selectAll($this->table, $this->primary_key(), $this->primary_key)) {
 			throw new \Exception("Cannot instantiate non-existent record");
 		}
 		

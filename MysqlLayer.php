@@ -102,6 +102,28 @@ class MysqlLayer extends DatabaseLayer {
 		return $this->run(sprintf('describe `%s`', $table))->fetchAll($style);
 	}
 	
+	/**
+	 * Retrieves all fields from a single record
+	 *
+	 * @param str $table
+	 * @param int $id
+	 * @param str $primary_key
+	 * @param int $style
+	 * @return mixed
+	 */
+	public function selectAll($table, $id, $primary_key='id', $style=\PDO::FETCH_OBJ) {
+		return $this->run(
+			sprintf(
+				'select * from `%s` %s',
+				$table,
+				$this->buildWhereClause(array(
+					$this->buildEqualCondition($primary_key)
+				))
+			),
+			array($id)
+		)->fetch($style);
+	}
+	
 	
 	/**
 	 * Creates a conditional predicate for use within a where clause
@@ -170,5 +192,18 @@ class MysqlLayer extends DatabaseLayer {
 		}
 		
 		return $stmt;
+	}
+	
+	/**
+	 * Generates the where clause
+	 *
+	 * @param void
+	 * @return str
+	 */
+	protected function buildWhereClause(array $conditions) {
+		return empty($conditions) ? '' : sprintf(
+			'where %s',
+			implode(' and ', $conditions)
+		);
 	}
 }

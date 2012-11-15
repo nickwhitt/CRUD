@@ -146,8 +146,8 @@ class MysqlLayer extends DatabaseLayer {
 			sprintf(
 				'select * from `%s` %s',
 				$table,
-				self::buildWhereClause(array(
-					self::buildEqualCondition($primary_key)
+				$this->buildWhereClause(array(
+					$this->buildEqualCondition($primary_key)
 				))
 			),
 			array($id)
@@ -162,7 +162,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param bool $negate
 	 * @return str
 	 */
-	public static function buildEqualCondition($column, $negate=FALSE) {
+	public function buildEqualCondition($column, $negate=FALSE) {
 		return sprintf('%s %s= ?', $column, $negate === FALSE ? '' : '!');
 	}
 	
@@ -173,7 +173,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param bool $negate
 	 * @return str
 	 */
-	public static function buildLikeCondition($column, $negate=FALSE) {
+	public function buildLikeCondition($column, $negate=FALSE) {
 		return sprintf('%s %s like ?', $column, $negate === FALSE ? '' : 'not');
 	}
 	
@@ -185,7 +185,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param bool $negate
 	 * @return str
 	 */
-	public static function buildInCondition($column, $count, $negate=FALSE) {
+	public function buildInCondition($column, $count, $negate=FALSE) {
 		return sprintf(
 			'%s %s in (%s)',
 			$column,
@@ -201,9 +201,10 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param bool $negate
 	 * @return str
 	 */
-	public static function buildNullCondition($column, $negate=FALSE) {
+	public function buildNullCondition($column, $negate=FALSE) {
 		return sprintf('%s is %s null', $column, $negate === FALSE ? '' : 'not');
 	}
+	
 	
 	/**
 	 * Generates the where clause
@@ -211,7 +212,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param array $conditions
 	 * @return str
 	 */
-	public static function buildWhereClause(array $conditions) {
+	protected function buildWhereClause(array $conditions) {
 		return empty($conditions) ? '' : sprintf(
 			'where %s',
 			implode(' and ', $conditions)
@@ -224,13 +225,12 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param array $orders
 	 * @return str
 	 */
-	public static function buildOrderClause(array $orders) {
+	protected function buildOrderClause(array $orders) {
 		return empty($orders) ? '' : sprintf(
 			'order by %s',
 			implode(', ', $orders)
 		);
 	}
-	
 	
 	/**
 	 * Executes a Prepared Statement
@@ -265,8 +265,8 @@ class MysqlLayer extends DatabaseLayer {
 				'select `%s` from `%s` %s %s',
 				$column,
 				$table,
-				self::buildWhereClause($conditions),
-				self::buildOrderClause($orders)
+				$this->buildWhereClause($conditions),
+				$this->buildOrderClause($orders)
 			),
 			$values
 		);

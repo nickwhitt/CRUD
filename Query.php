@@ -16,4 +16,9 @@ interface Query {
 	public function describeTable($table, $style=\PDO::FETCH_OBJ);
 	public function selectKeys($table, array $conditions, array $values, array $orders, $primary_key='id', $style=\PDO::FETCH_OBJ);
 	public function selectKey($table, array $conditions, array $values, array $orders, $primary_key='id', $style=\PDO::FETCH_OBJ);
+	public function selectAll($table, $id, $primary_key='id', $style=\PDO::FETCH_OBJ);
+	public function buildEqualCondition($column, $negate=FALSE);
+	public function buildLikeCondition($column, $negate=FALSE);
+	public function buildInCondition($column, $count, $negate=FALSE);
+	public function buildNullCondition($column, $negate=FALSE);
 }

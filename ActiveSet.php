@@ -9,7 +9,7 @@
  */
 
 namespace CRUD;
-class ActiveSet extends Base {
+class ActiveSet extends ActiveBase {
 	protected $conditions = array();
 	protected $parameters = array();
 	protected $orders = array();
@@ -20,7 +20,7 @@ class ActiveSet extends Base {
 	 * @param void
 	 * @return static extended class
 	 */
-	public static function create(Query $dba, $table) {
+	public static function create(DatabaseLayer $dba, $table) {
 		return new static($dba, $table);
 	}
 	
@@ -29,16 +29,13 @@ class ActiveSet extends Base {
 	 *
 	 * Executes the constructed query and returns the $styled results
 	 *
-	 * @param mixed $class
 	 * @param int $style
 	 * @return mixed
 	 */
-	public function fetchAll($class=NULL, $style=\PDO::FETCH_OBJ) {
+	public function fetchAll($style=\PDO::FETCH_OBJ) {
 		$records = array();
-		foreach ($this->dba->query($this->buildStatement(), $this->parameters, $style) as $row) {
-			$records[] = is_null($class)
-				? new ActiveModel($this->table, $row->{$this->primary_key})
-				: new $class($row->{$this->primary_key});
+		foreach ($this->dba->selectKeys($this->table, $this->conditions, $this->parameters, $this->orders, $this->primary_key) as $row) {
+			$records[] = new ActiveModel($this->dba, $this->table, $row->{$this->primary_key});
 		}
 		
 		return $records;
@@ -49,15 +46,12 @@ class ActiveSet extends Base {
 	 *
 	 * Executes the contructed query and returns the $styled result
 	 *
-	 * @param mixed $class
 	 * @param int $style
 	 * @return mixed
 	 */
-	public function fetchOne($class=NULL, $style=\PDO::FETCH_OBJ) {
-		$row = $this->dba->prepare($this->buildStatement(), $this->parameters)->fetch($style);
-		return is_null($class)
-			? new ActiveModel($this->table, $row->{$this->primary_key})
-			: new $class($row->{$this->primary_key});
+	public function fetchOne($style=\PDO::FETCH_OBJ) {
+		$row = $this->dba->selectKey($this->table, $this->conditions, $this->parameters, $this->orders, $this->primary_key);
+		return new ActiveModel($this->dba, $this->table, $row->{$this->primary_key});
 	}
 	
 	/**
@@ -187,49 +181,5 @@ class ActiveSet extends Base {
 	public function orderBy($attribute, $reverse=FALSE) {
 		$this->orders[] = sprintf('%s %s', $attribute, $reverse === FALSE ? 'asc' : 'desc');
 		return $this;
-	}
-	
-	
-	/**
-	 * Generates the full SQL query
-	 *
-	 * @param void
-	 * @return str
-	 */
-	protected function buildStatement() {
-		return sprintf(
-			'select %s from %s %s %s',
-			$this->primary_key,
-			$this->table,
-			$this->buildWhereClause(),
-			$this->buildOrderClause()
-		);
-	}
-	
-	/**
-	 * Generates the where clause
-	 *
-	 * @param void
-	 * @return str
-	 */
-	protected function buildWhereClause() {
-		return empty($this->conditions) ? '' : sprintf(
-			'where %s',
-			implode(' and ', $this->conditions)
-		);
-	}
-	
-	/**
-	 * Generates the order clause
-	 *
-	 * @param void
-	 * @return str
-	 */
-	protected function buildOrderClause() {
-		if (empty($this->orders)) {
-			$this->orders[] = $this->primary_key;
-		}
-		
-		return sprintf('order by %s', implode(', ', $this->orders));
 	}
 }

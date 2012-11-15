@@ -9,7 +9,7 @@
  */
 
 namespace CRUD;
-abstract class Base {
+abstract class ActiveBase {
 	protected $dba;
 	protected $table;
 	protected $primary_key;

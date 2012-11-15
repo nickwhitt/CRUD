@@ -9,8 +9,8 @@
  */
 
 namespace CRUD;
-class ActiveModel extends Base {
-	public function __construct(Query $dba, $table, $id=NULL) {
+class ActiveModel extends ActiveBase {
+	public function __construct(DatabaseLayer $dba, $table, $id=NULL) {
 		parent::__construct($dba, $table);
 		
 		if (!is_null($id)) {
@@ -36,24 +36,13 @@ class ActiveModel extends Base {
 	 */
 	public function create() {
 		$this->requireNotExists();
-		
-		$columns = $attributes = $values = array();
-		foreach ($this->attributes as $attribute => $value) {
-			if ($attribute == $this->primary_key) {
-				continue;
-			}
-			
-			$columns[] = $attribute;
-			$attributes[] = ":$attribute";
-			$values[":$attribute"] = is_null($value) ? 'NULL' : $value;
-		}
-		
-		return $this->__set($this->primary_key, $this->dba->insert(sprintf(
-			'insert into %s (%s) values (%s)',
+		$id = $this->dba->insert(
 			$this->table,
-			implode(', ', $columns),
-			implode(', ', $attributes)
-		), $values));
+			array_keys($this->attributes),
+			array_values($this->attributes)
+		);
+		
+		return $this->__set($this->primary_key, $id);
 	}
 	
 	/**
@@ -65,23 +54,17 @@ class ActiveModel extends Base {
 	public function update() {
 		$this->requireExists();
 		
-		$updates = $values = array();
+		$columns = $values = array();
 		foreach ($this->attributes as $attribute => $value) {
-			$values[":$attribute"] = is_null($value) ? 'NULL' : $value;
 			if ($attribute == $this->primary_key) {
 				continue;
 			}
 			
-			$updates[] = sprintf('%s = %s', $attribute, ":$attribute");
+			$columns[] = $attribute;
+			$values[] = $value;
 		}
 		
-		return $this->dba->update(sprintf(
-			'update %s set %s where %s = %s limit 1',
-			$this->table,
-			implode(', ', $updates),
-			$this->primary_key,
-			":$this->primary_key"
-		), $values);
+		return $this->dba->update($this->table, $this->primary_key(), $columns, $values, $this->primary_key);
 	}
 	
 	/**
@@ -91,12 +74,7 @@ class ActiveModel extends Base {
 	 * @return bool
 	 */
 	public function delete() {
-		return $this->dba->delete(sprintf(
-			'delete from %s where %s = %s limit 1',
-			$this->table,
-			$this->primary_key,
-			":$this->primary_key"
-		), array(":$this->primary_key" => $this->primary_key()));
+		return $this->dba->delete($this->table, $this->primary_key(), $this->primary_key);
 	}
 	
 	/**
@@ -109,11 +87,7 @@ class ActiveModel extends Base {
 	 * @return int
 	 */
 	public function save() {
-		if ($this->exists()) {
-			return $this->update();
-		}
-		
-		return $this->create();
+		return $this->exists() ? $this->update() : $this->create();
 	}
 	
 	
@@ -165,7 +139,7 @@ class ActiveModel extends Base {
 	}
 	
 	protected function fetchAttributes() {
-		if (!$row = $this->dba->fetchByPrimaryKey($this->table, $this->primary_key(), $this->primary_key)) {
+		if (!$row = $this->dba->selectAll($this->table, $this->primary_key(), $this->primary_key)) {
 			throw new \Exception("Cannot instantiate non-existent record");
 		}
 		

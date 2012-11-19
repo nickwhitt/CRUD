@@ -9,7 +9,7 @@
  */
 
 namespace CRUD;
-class ActiveSet extends ActiveBase implements \Iterator, \Countable {
+class ActiveSet extends ActiveBase implements \Iterator, \Countable, \ArrayAccess {
 	protected $conditions = array();
 	protected $parameters = array();
 	protected $orders = array();
@@ -245,5 +245,57 @@ class ActiveSet extends ActiveBase implements \Iterator, \Countable {
 	 */
 	public function count() {
 		return $this->dba->traverseCount();
+	}
+	
+	
+	/* ArrayAccess Methods */
+	
+	/**
+	 * Tests if the array offset exists
+	 *
+	 * @param int $offset
+	 * @return bool
+	 */
+	public function offsetExists($offset) {
+		return $offset <= ($this->count() - 1);
+	}
+	
+	/**
+	 * Retrieves the offset from the model map
+	 *
+	 * @param int $offset
+	 * @return ActiveModel
+	 */
+	public function offsetGet($offset) {
+		if (!$this->offsetExists($offset)) {
+			throw new \Exception(sprintf('Invalid offset: %s[%s]', get_class(), $offset));
+		}
+		
+		return new ActiveModel($this->dba, $this->table, $this->dba->traverseOffset($offset, $this->parameters));
+	}
+	
+	/**
+	 * Updates the model map
+	 *
+	 * Not currently allowed as record set is intended to be read-only.
+	 *
+	 * @param int $offset
+	 * @param mixed $value
+	 * @return void
+	 */
+	public function offsetSet($offset, $value) {
+		throw new \Exception(sprintf('%s is read-only', get_class()));
+	}
+	
+	/**
+	 * Updates the model map
+	 *
+	 * Not currently allowed as record set is intended to be read-only.
+	 *
+	 * @param int $offset
+	 * @return void
+	 */
+	public function offsetUnset($offset) {
+		throw new \Exception(sprintf('%s is read-only', get_class()));
 	}
 }

@@ -113,15 +113,11 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param int $style
 	 * @return mixed
 	 */
-	public function selectAll($table, $id, $primary_key='id', $style=\PDO::FETCH_OBJ) {
-		return $this->run(
-			sprintf(
-				'select * from `%s` %s',
-				$table,
-				$this->buildWhereClause(array(
-					$this->buildEqualCondition($primary_key)
-				))
-			),
+	public function selectStar($table, $id, $primary_key='id', $style=\PDO::FETCH_OBJ) {
+		return $this->select(
+			'*',
+			$table,
+			array($this->buildEqualCondition($primary_key)),
 			array($id)
 		)->fetch($style);
 	}
@@ -161,6 +157,20 @@ class MysqlLayer extends DatabaseLayer {
 	 */
 	public function traverseNext() {
 		return ($row = $this->traverse_stmt->fetch(\PDO::FETCH_NUM))
+			? $row[0]
+			: NULL;
+	}
+	
+	/**
+	 * Retrieves a traversal statement row by offset
+	 *
+	 * @param int $offset
+	 * @param array $values
+	 * @return mixed primary key
+	 */
+	public function traverseOffset($offset, array $values) {
+		$stmt = $this->run(sprintf('%s limit %d,1', $this->traverse_stmt->queryString, $offset), $values);
+		return ($row = $stmt->fetch(\PDO::FETCH_NUM))
 			? $row[0]
 			: NULL;
 	}
@@ -237,7 +247,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param array $conditions
 	 * @return str
 	 */
-	protected function buildWhereClause(array $conditions) {
+	protected function buildWhereClause(array $conditions=array()) {
 		return empty($conditions) ? '' : sprintf(
 			'where %s',
 			implode(' and ', $conditions)
@@ -250,7 +260,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param array $orders
 	 * @return str
 	 */
-	protected function buildOrderClause(array $orders) {
+	protected function buildOrderClause(array $orders=array()) {
 		return empty($orders) ? '' : sprintf(
 			'order by %s',
 			implode(', ', $orders)
@@ -264,8 +274,8 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param array $params
 	 * @return PDOStatement
 	 */
-	protected function run($sql, array $params=array(), array $options=array()) {
-		$stmt = $this->conn->prepare($sql, $options);
+	protected function run($sql, array $params=array()) {
+		$stmt = $this->conn->prepare($sql);
 		if (!$stmt->execute($params)) {
 			// throw driver specific error
 			$error = $stmt->errorInfo();
@@ -282,12 +292,13 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param str $table
 	 * @param array $conditions
 	 * @param array $values
+	 * @param array $orders
 	 * @return PODStatement
 	 */
-	protected function select($column, $table, array $conditions, array $values, array $orders) {
+	protected function select($column, $table, array $conditions=array(), array $values=array(), array $orders=array()) {
 		return $this->run(sprintf(
-				'select `%s` from `%s` %s %s',
-				$column,
+				'select %s from `%s` %s %s',
+				$column == '*' ? '*' : "`$column`",
 				$table,
 				$this->buildWhereClause($conditions),
 				$this->buildOrderClause($orders)

@@ -239,8 +239,8 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param array $params
 	 * @return PDOStatement
 	 */
-	protected function run($sql, array $params=array()) {
-		$stmt = $this->conn->prepare($sql);
+	protected function run($sql, array $params=array(), array $options=array()) {
+		$stmt = $this->conn->prepare($sql, $options);
 		if (!$stmt->execute($params)) {
 			// throw driver specific error
 			$error = $stmt->errorInfo();
@@ -260,7 +260,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param array $orders
 	 * @return PODStatement
 	 */
-	protected function select($column, $table, array $conditions, array $values, array $orders) {
+	public function select($column, $table, array $conditions, array $values, array $orders, array $options=array()) {
 		return $this->run(sprintf(
 				'select `%s` from `%s` %s %s',
 				$column,

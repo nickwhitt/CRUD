@@ -9,10 +9,14 @@
  */
 
 namespace CRUD;
-class ActiveSet extends ActiveBase {
+class ActiveSet extends ActiveBase implements \Iterator {
 	protected $conditions = array();
 	protected $parameters = array();
 	protected $orders = array();
+	
+	protected $stmt;
+	protected $position;
+	protected $model;
 	
 	/**
 	 * Statically generate class constructor
@@ -29,29 +33,22 @@ class ActiveSet extends ActiveBase {
 	 *
 	 * Executes the constructed query and returns the $styled results
 	 *
-	 * @param int $style
-	 * @return mixed
+	 * @param void
+	 * @return self
 	 */
-	public function fetchAll($style=\PDO::FETCH_OBJ) {
-		$records = array();
-		foreach ($this->dba->selectKeys($this->table, $this->conditions, $this->parameters, $this->orders, $this->primary_key) as $row) {
-			$records[] = new ActiveModel($this->dba, $this->table, $row->{$this->primary_key});
-		}
+	public function fetch() {
+		$this->cursor = -1;
+		$this->stmt = $this->dba->select(
+			$this->primary_key,
+			$this->table,
+			$this->conditions,
+			$this->parameters,
+			$this->orders,
+			array(\PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL)
+		);
 		
-		return $records;
-	}
-	
-	/**
-	 * Query termination method
-	 *
-	 * Executes the contructed query and returns the $styled result
-	 *
-	 * @param int $style
-	 * @return mixed
-	 */
-	public function fetchOne($style=\PDO::FETCH_OBJ) {
-		$row = $this->dba->selectKey($this->table, $this->conditions, $this->parameters, $this->orders, $this->primary_key);
-		return new ActiveModel($this->dba, $this->table, $row->{$this->primary_key});
+		$this->stmt->execute();
+		return $this;
 	}
 	
 	/**
@@ -181,5 +178,36 @@ class ActiveSet extends ActiveBase {
 	public function orderBy($attribute, $reverse=FALSE) {
 		$this->orders[] = sprintf('%s %s', $attribute, $reverse === FALSE ? 'asc' : 'desc');
 		return $this;
+	}
+	
+	
+	public function current() {
+		return $this->model;
+	}
+	
+	public function key() {
+		return $this->cursor;
+	}
+	
+	public function next() {
+		$id = ($row = $this->stmt->fetch(\PDO::FETCH_OBJ, \PDO::FETCH_ORI_NEXT))
+			? $row->{$this->primary_key}
+			: NULL;
+		
+		$this->model = new ActiveModel($this->dba, $this->table, $id);
+		$this->cursor = $this->model->primary_key();
+	}
+	
+	public function rewind() {
+		if (is_null($this->stmt)) {
+			throw new \Exception('Error: Cannot traverse before query termination.');
+		}
+		
+		if ($this->cursor >= 0) $this->fetch();
+		$this->next();
+	}
+	
+	public function valid() {
+		return $this->model->exists();
 	}
 }

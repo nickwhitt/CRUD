@@ -10,6 +10,8 @@
 
 namespace CRUD;
 class MysqlLayer extends DatabaseLayer {
+	protected $traverse_stmt;
+	
 	/**
 	 * Executes Insert statement
 	 *
@@ -103,36 +105,6 @@ class MysqlLayer extends DatabaseLayer {
 	}
 	
 	/**
-	 * Retrieves a list of records by condition
-	 *
-	 * @param str $table
-	 * @param array $conditions
-	 * @param array $values
-	 * @param array $orders
-	 * @param str $primary_key
-	 * @param int $style
-	 * @return array
-	 */
-	public function selectKeys($table, array $conditions, array $values, array $orders, $primary_key='id', $style=\PDO::FETCH_OBJ) {
-		return $this->select($primary_key, $table, $conditions, $values, $orders)->fetchAll($style);
-	}
-	
-	/**
-	 * Retrives a single record by condition
-	 *
-	 * @param str $table
-	 * @param array $conditions
-	 * @param array $values
-	 * @param array $orders
-	 * @param str $primary_key
-	 * @param int $style
-	 * @return mixed
-	 */
-	public function selectKey($table, array $conditions, array $values, array $orders, $primary_key='id', $style=\PDO::FETCH_OBJ) {
-		return $this->select($primary_key, $table, $conditions, $values, $orders)->fetch($style);
-	}
-	
-	/**
 	 * Retrieves all fields from a single record
 	 *
 	 * @param str $table
@@ -154,6 +126,57 @@ class MysqlLayer extends DatabaseLayer {
 		)->fetch($style);
 	}
 	
+	
+	/* Traversal Methods */
+	
+	/**
+	 * Prepares a PDOStatement for ActiveSet traversal
+	 *
+	 * @param str $table
+	 * @param array $conditions
+	 * @param array $values
+	 * @param array $orders
+	 * @param str $primary_key
+	 * @return void
+	 */
+	public function traverseInit($table, array $conditions, array $values, array $orders, $primary_key='id') {
+		$this->traverse_stmt = $this->select($primary_key, $table, $conditions, $values, $orders);
+	}
+	
+	/**
+	 * Initializes the traversal statement result set for iteration
+	 *
+	 * @param void
+	 * @return void
+	 */
+	public function traverseReset() {
+		$this->traverse_stmt->execute();
+	}
+	
+	/**
+	 * Retrieves the next row from the traversal statement
+	 *
+	 * @param void
+	 * @return mixed primary key
+	 */
+	public function traverseNext() {
+		return ($row = $this->traverse_stmt->fetch(\PDO::FETCH_NUM))
+			? $row[0]
+			: NULL;
+	}
+	
+	/**
+	 * Retrieves the number of rows from the traversal statement
+	 *
+	 * @param void
+	 * @return int
+	 */
+	public function traverseCount() {
+		return $this->traverse_stmt->rowCount();
+	}
+	
+	
+	/* Conditional Predicate Methods */
 	
 	/**
 	 * Creates a conditional predicate for use within a where clause
@@ -206,6 +229,8 @@ class MysqlLayer extends DatabaseLayer {
 	}
 	
 	
+	/* Protected Methods */
+	
 	/**
 	 * Generates the where clause
 	 *
@@ -257,10 +282,9 @@ class MysqlLayer extends DatabaseLayer {
 	 * @param str $table
 	 * @param array $conditions
 	 * @param array $values
-	 * @param array $orders
 	 * @return PODStatement
 	 */
-	public function select($column, $table, array $conditions, array $values, array $orders, array $options=array()) {
+	protected function select($column, $table, array $conditions, array $values, array $orders) {
 		return $this->run(sprintf(
 				'select `%s` from `%s` %s %s',
 				$column,

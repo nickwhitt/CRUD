@@ -14,7 +14,6 @@ class ActiveSet extends ActiveBase implements \Iterator, \Countable {
 	protected $parameters = array();
 	protected $orders = array();
 	
-	protected $stmt;
 	protected $cursor;
 	protected $model_id;
 	
@@ -38,12 +37,12 @@ class ActiveSet extends ActiveBase implements \Iterator, \Countable {
 	 */
 	public function fetch() {
 		$this->cursor = -1;
-		$this->stmt = $this->dba->select(
-			$this->primary_key,
+		$this->dba->traverseInit(
 			$this->table,
 			$this->conditions,
 			$this->parameters,
-			$this->orders
+			$this->orders,
+			$this->primary_key
 		);
 		
 		return $this;
@@ -211,9 +210,7 @@ class ActiveSet extends ActiveBase implements \Iterator, \Countable {
 	 */
 	public function next() {
 		$this->cursor++;
-		$this->model_id = ($row = $this->stmt->fetch(\PDO::FETCH_OBJ, \PDO::FETCH_ORI_NEXT))
-			? $row->{$this->primary_key}
-			: NULL;
+		$this->model_id = $this->dba->traverseNext();
 	}
 	
 	/**
@@ -223,11 +220,7 @@ class ActiveSet extends ActiveBase implements \Iterator, \Countable {
 	 * @return void
 	 */
 	public function rewind() {
-		if (is_null($this->stmt)) {
-			throw new \Exception('Error: Cannot traverse before query termination.');
-		}
-		
-		$this->stmt->execute();
+		if ($this->cursor >= 0) $this->dba->traverseReset();
 		$this->next();
 	}
 	
@@ -251,6 +244,6 @@ class ActiveSet extends ActiveBase implements \Iterator, \Countable {
 	 * @return int
 	 */
 	public function count() {
-		return $this->stmt->rowCount();
+		return $this->dba->traverseCount();
 	}
 }

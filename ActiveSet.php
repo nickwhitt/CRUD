@@ -9,7 +9,7 @@
  */
 
 namespace CRUD;
-class ActiveSet extends ActiveBase implements \Iterator {
+class ActiveSet extends ActiveBase implements \Iterator, \Countable {
 	protected $conditions = array();
 	protected $parameters = array();
 	protected $orders = array();
@@ -239,5 +239,18 @@ class ActiveSet extends ActiveBase implements \Iterator {
 	 */
 	public function valid() {
 		return (bool) $this->model_id;
+	}
+	
+	
+	/* Countable Methods */
+	
+	/**
+	 * Returns the number of records in the set
+	 *
+	 * @param void
+	 * @return int
+	 */
+	public function count() {
+		return $this->stmt->rowCount();
 	}
 }

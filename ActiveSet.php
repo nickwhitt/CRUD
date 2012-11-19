@@ -15,8 +15,8 @@ class ActiveSet extends ActiveBase implements \Iterator {
 	protected $orders = array();
 	
 	protected $stmt;
-	protected $position;
-	protected $model;
+	protected $cursor;
+	protected $model_id;
 	
 	/**
 	 * Statically generate class constructor
@@ -43,11 +43,9 @@ class ActiveSet extends ActiveBase implements \Iterator {
 			$this->table,
 			$this->conditions,
 			$this->parameters,
-			$this->orders,
-			array(\PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL)
+			$this->orders
 		);
 		
-		$this->stmt->execute();
 		return $this;
 	}
 	
@@ -181,33 +179,65 @@ class ActiveSet extends ActiveBase implements \Iterator {
 	}
 	
 	
+	/* Iterator Methods */
+	
+	/**
+	 * Retrieves the current model
+	 *
+	 * @param void
+	 * @return ActiveModel
+	 */
 	public function current() {
-		return $this->model;
+		return new ActiveModel($this->dba, $this->table, $this->model_id);
 	}
 	
+	/**
+	 * Retrieves the internal cursor position
+	 *
+	 * @param void
+	 * @return int
+	 */
 	public function key() {
 		return $this->cursor;
 	}
 	
+	/**
+	 * Increments the internal cursor position
+	 *
+	 * Stores the new model primary key.
+	 *
+	 * @param void
+	 * @return void
+	 */
 	public function next() {
-		$id = ($row = $this->stmt->fetch(\PDO::FETCH_OBJ, \PDO::FETCH_ORI_NEXT))
+		$this->cursor++;
+		$this->model_id = ($row = $this->stmt->fetch(\PDO::FETCH_OBJ, \PDO::FETCH_ORI_NEXT))
 			? $row->{$this->primary_key}
 			: NULL;
-		
-		$this->model = new ActiveModel($this->dba, $this->table, $id);
-		$this->cursor = $this->model->primary_key();
 	}
 	
+	/**
+	 * Resets the internal cursor position
+	 *
+	 * @param void
+	 * @return void
+	 */
 	public function rewind() {
 		if (is_null($this->stmt)) {
 			throw new \Exception('Error: Cannot traverse before query termination.');
 		}
 		
-		if ($this->cursor >= 0) $this->fetch();
+		$this->stmt->execute();
 		$this->next();
 	}
 	
+	/**
+	 * Tests if the internal cursor points to a valid model
+	 *
+	 * @param void
+	 * @return bool
+	 */
 	public function valid() {
-		return $this->model->exists();
+		return (bool) $this->model_id;
 	}
 }

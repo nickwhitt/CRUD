@@ -15,4 +15,8 @@ abstract class DatabaseLayer implements Query {
 	public function __construct(\PDO $pdo) {
 		$this->conn = $pdo;
 	}
+	
+	public function __destruct() {
+		$this->conn = NULL;
+	}
 }

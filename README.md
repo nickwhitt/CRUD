@@ -1,6 +1,6 @@
-# CRUD
+# CRUD [![Build Status](https://travis-ci.org/nickwhitt/CRUD.png)](https://travis-ci.org/nickwhitt/CRUD)
 A PHP Database Object Map  
-<https://github.com/nickwhitt/devtools>
+<https://github.com/nickwhitt/CRUD>
 
 # Copyright
 Copyright (c) 2012, Nicholas Whitt (<nick.whitt@gmail.com>)

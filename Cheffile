@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+site 'http://community.opscode.com/api/v1'
+
+cookbook 'ubuntu'
+cookbook 'ntp'
+cookbook 'timezone'
+cookbook 'devtools',
+  :git => 'https://github.com/nickwhitt/devtools.git'

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit colors="true" verbose="true" bootstrap="bootstrap.php">
+  <testsuites>
+    <testsuite name="CRUD">
+      <file phpVersion="5.3.0" phpVersionOperator=">=">tests/MysqlLayerTest.php</file>
+      <file phpVersion="5.3.0" phpVersionOperator=">=">tests/ActiveModelTest.php</file>
+      <file phpVersion="5.3.0" phpVersionOperator=">=">tests/ActiveSetTest.php</file>
+    </testsuite>
+  </testsuites>
+</phpunit>

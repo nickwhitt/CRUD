@@ -25,6 +25,8 @@ interface Query {
 	
 	// Conditional Predicate Methods
 	public function buildEqualCondition($column, $negate=FALSE);
+	public function buildLessThanCondition($column, $exclusive=FALSE);
+	public function buildGreaterThanCondition($column, $exclusive=FALSE);
 	public function buildLikeCondition($column, $negate=FALSE);
 	public function buildInCondition($column, $count, $negate=FALSE);
 	public function buildNullCondition($column, $negate=FALSE);

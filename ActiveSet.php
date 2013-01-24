@@ -154,15 +154,28 @@ class ActiveSet extends ActiveBase implements \Iterator, \Countable, \ArrayAcces
 	}
 	
 	/**
-	 * Filter by interval condition
+	 * Filter by numerical comparison condition
+	 *
+	 * Creates clauses like:
+	 *   min: where X >[=] :Y
+	 *   max: where X <[=] :Y
 	 *
 	 * @param str $attribute
 	 * @param array $condition associative keys "min" and/or "max"
+	 * @param bool $exclusive
 	 * @return self
 	 */
-	public function filterByInterval($attribute, array $condition) {
-		// min: where X >= :Y
-		// max: where X <= :Y
+	public function filterByComparison($attribute, array $conditions, $exclusive=FALSE) {
+		if (array_key_exists('min', $conditions)) {
+			$this->parameters[] = $conditions['min'];
+			$this->conditions[] = $this->dba->buildGreaterThanCondition($attribute, $exclusive);
+		}
+		if (array_key_exists('max', $conditions)) {
+			$this->parameters[] = $conditions['max'];
+			$this->conditions[] = $this->dba->buildLessThanCondition($attribute, $exclusive);
+		}
+		
+		return $this;
 	}
 	
 	/**

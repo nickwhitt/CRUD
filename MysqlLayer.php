@@ -196,7 +196,29 @@ class MysqlLayer extends DatabaseLayer {
 	 * @return str
 	 */
 	public function buildEqualCondition($column, $negate=FALSE) {
-		return sprintf('%s %s= ?', $column, $negate === FALSE ? '' : '!');
+		return sprintf('%s %s= ?', $column, $negate == FALSE ? '' : '!');
+	}
+	
+	/**
+	 * Creates a numerical comparision predicate for use within a where clause
+	 *
+	 * @param str $column
+	 * @param bool $exclusive
+	 * @return str
+	 */
+	public function buildLessThanCondition($column, $exclusive=FALSE) {
+		return sprintf('%s <%s ?', $column, $exclusive == FALSE ? '=' : '');
+	}
+	
+	/**
+	 * Creates a numerical comparision predicate for use within a where clause
+	 *
+	 * @param str $column
+	 * @param bool $exclusive
+	 * @return str
+	 */
+	public function buildGreaterThanCondition($column, $exclusive=FALSE) {
+		return sprintf('%s >%s ?', $column, $exclusive == FALSE ? '=' : '');
 	}
 	
 	/**
@@ -207,7 +229,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @return str
 	 */
 	public function buildLikeCondition($column, $negate=FALSE) {
-		return sprintf('%s %s like ?', $column, $negate === FALSE ? '' : 'not');
+		return sprintf('%s %slike ?', $column, $negate == FALSE ? '' : 'not ');
 	}
 	
 	/**
@@ -220,9 +242,9 @@ class MysqlLayer extends DatabaseLayer {
 	 */
 	public function buildInCondition($column, $count, $negate=FALSE) {
 		return sprintf(
-			'%s %s in (%s)',
+			'%s %sin (%s)',
 			$column,
-			$negate === FALSE ? '' : 'not',
+			$negate == FALSE ? '' : 'not ',
 			implode(',', array_fill(0, $count, '?'))
 		);
 	}
@@ -235,7 +257,7 @@ class MysqlLayer extends DatabaseLayer {
 	 * @return str
 	 */
 	public function buildNullCondition($column, $negate=FALSE) {
-		return sprintf('%s is %s null', $column, $negate === FALSE ? '' : 'not');
+		return sprintf('%s is%s null', $column, $negate == FALSE ? '' : ' not');
 	}
 	
 	

@@ -38,7 +38,6 @@ class MysqlLayerTest extends \PHPUnit_Framework_TestCase {
 		$this->assertEquals($expected, $this->layer->describeTable('test'));
 	}
 	
-	
 	/* Conditional Predicate Methods */
 	
 	public function testBuildEqualCondition() {
@@ -114,46 +113,110 @@ class MysqlLayerTest extends \PHPUnit_Framework_TestCase {
 		$this->assertEquals("$column is not null", $this->layer->buildNullCondition($column, 'invalid'), 'Testing invalid parameter');
 	}
 	
-	
-	/* Protected methods */
+	/* Generation Methods */
 	
 	public function testBuildWhereClause() {
-		$method = new \ReflectionMethod($this->layer, 'buildWhereClause');
-		$method->setAccessible(TRUE);
+		$conditions = $this->generateConditions();
 		
-		$this->assertEquals('', $method->invoke($this->layer), 'Testing default');
-		
-		$conditions = array(
-			'true = 1',
-			'a = b',
-			'0 is not null'
-		);
-		
-		$this->assertEquals("where {$conditions[0]}", $method->invoke($this->layer, array($conditions[0])), 'Testing single element');
+		$this->assertEquals('', $this->layer->buildWhereClause(), 'Testing default');
+		$this->assertEquals("where {$conditions[0]}", $this->layer->buildWhereClause(array($conditions[0])), 'Testing single element');
 		$this->assertEquals(
 			"where {$conditions[0]} and {$conditions[1]} and {$conditions[2]}",
-			$method->invoke($this->layer, $conditions),
+			$this->layer->buildWhereClause($conditions),
 			'Testing multiple elements'
 		);
 	}
 	
 	public function testBuildOrderClause() {
-		$method = new \ReflectionMethod($this->layer, 'buildOrderClause');
-		$method->setAccessible(TRUE);
+		$orders = $this->generateOrders();
 		
-		$this->assertEquals('', $method->invoke($this->layer), 'Testing default');
-		
-		$orders = array(
-			'test_field',
-			'order_field asc',
-			'desc_field desc'
-		);
-		
-		$this->assertEquals("order by {$orders[0]}", $method->invoke($this->layer, array($orders[0])), 'Testing single element');
+		$this->assertEquals('', $this->layer->buildOrderClause(), 'Testing default');
+		$this->assertEquals("order by {$orders[0]}", $this->layer->buildOrderClause(array($orders[0])), 'Testing single element');
 		$this->assertEquals(
 			"order by {$orders[0]}, {$orders[1]}, {$orders[2]}",
-			$method->invoke($this->layer, $orders),
+			$this->layer->buildOrderClause($orders),
 			'Testing multiple elements'
 		);
+	}
+	
+	public function testBuildLimitClause() {
+		$limit = 20;
+		$offset = 42;
+		
+		$this->assertEquals('limit 0,1', $this->layer->buildLimitClause(), 'Testing default');
+		$this->assertEquals('limit 0,1', $this->layer->buildLimitClause(1), 'Testing explicit default limit');
+		$this->assertEquals('limit 0,1', $this->layer->buildLimitClause(1, 0), 'Testing explicit defaults');
+		
+		$this->assertEquals("limit 0,$limit", $this->layer->buildLimitClause($limit), 'Testing limit');
+		$this->assertEquals("limit $offset,$limit", $this->layer->buildLimitClause($limit, $offset), 'Testing limit with offset');
+		$this->assertEquals("limit 0,0", $this->layer->buildLimitClause('invalid', 'unknown'), 'Testing invalid parameters');
+	}
+	
+	/* Query Methods */
+	
+	public function testBuildSelectQuery() {
+		$table = 'test';
+		$column = 'test_field';
+		$conditions = $this->generateConditions();
+		$orders = $this->generateOrders();
+		
+		$select = "select `$column` from `$table`";
+		$select_where = "$select where {$conditions[0]} and {$conditions[1]} and {$conditions[2]}";
+		$order = "order by {$orders[0]}, {$orders[1]}, {$orders[2]}";
+		
+		$this->assertEquals($select, $this->layer->buildSelectQuery($column, $table), 'Testing default');
+		$this->assertEquals($select_where, $this->layer->buildSelectQuery($column, $table, $conditions), 'Testing with conditions');
+		$this->assertEquals("$select  $order", $this->layer->buildSelectQuery($column, $table, array(), $orders), 'Testing with order');
+		$this->assertEquals("$select_where $order", $this->layer->buildSelectQuery($column, $table, $conditions, $orders), 'Testing with conditions and order');
+	}
+	
+	public function testBuildInsertQuery() {
+		$table = 'test';
+		$columns = $this->generateColumns();
+		
+		$expected = "insert into $table ({$columns[0]}) values (?)";
+		$this->assertEquals($expected, $this->layer->buildInsertQuery($table, array($columns[0])), 'Testing single column');
+		
+		$expected = "insert into $table ({$columns[0]}, {$columns[1]}, {$columns[2]}) values (?,?,?)";
+		$this->assertEquals($expected, $this->layer->buildInsertQuery($table, $columns), 'Testing multiple columns');
+	}
+	
+	public function testBuildUpdateQuery() {
+		$table = 'test';
+		$id = 'test_key';
+		$columns = $this->generateColumns();
+		
+		$expected = "update $table set {$columns[0]}=?, {$columns[1]}=?, {$columns[2]}=? where id = ? limit 1";
+		$this->assertEquals($expected, $this->layer->buildUpdateQuery($table, $columns), 'Testing default');
+		$this->assertEquals($expected, $this->layer->buildUpdateQuery($table, $columns, 'id'), 'Testing explicit key');
+		
+		$expected = "update $table set {$columns[0]}=? where id = ? limit 1";
+		$this->assertEquals($expected, $this->layer->buildUpdateQuery($table, array($columns[0])), 'Testing single column');
+		
+		$expected = "update $table set {$columns[0]}=?, {$columns[1]}=?, {$columns[2]}=? where $id = ? limit 1";
+		$this->assertEquals($expected, $this->layer->buildUpdateQuery($table, $columns, $id), 'Testing non-standard key');
+	}
+	
+	public function testBuildDeleteQuery() {
+		$table = 'test';
+		$id = 'test_key';
+		
+		$this->assertEquals("delete from $table where id = ? limit 1", $this->layer->buildDeleteQuery($table), 'Testing default');
+		$this->assertEquals("delete from $table where id = ? limit 1", $this->layer->buildDeleteQuery($table, 'id'), 'Testing explicit key');
+		$this->assertEquals("delete from $table where $id = ? limit 1", $this->layer->buildDeleteQuery($table, $id), 'Testing non-standard key');
+	}
+	
+	/* Test Helper Methods */
+	
+	protected function generateConditions() {
+		return array('true = 1', 'a = b', '0 is not null');
+	}
+	
+	protected function generateOrders() {
+		return array('test_field', 'order_field asc', 'desc_field desc');
+	}
+	
+	protected function generateColumns() {
+		return array('test_one', 'test_two', 'test_three');
 	}
 }

@@ -32,13 +32,13 @@ class MysqlLayer extends DatabaseLayer {
 	 * @return str
 	 */
 	public function buildSelectQuery($column, $table, array $conditions=array(), array $orders=array()) {
-		return sprintf(
+		return trim(sprintf(
 			'select %s from `%s` %s %s',
 			$column == '*' ? '*' : "`$column`",
 			$table,
 			$this->buildWhereClause($conditions),
 			$this->buildOrderClause($orders)
-		);
+		));
 	}
 	
 	/**

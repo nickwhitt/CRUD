@@ -10,18 +10,17 @@
 
 namespace CRUD;
 interface Query {
-	public function insert($table, array $columns, array $values);
-	public function update($table, $id, array $columns, array $values, $primary_key='id');
-	public function delete($table, $id, $primary_key='id');
-	public function describeTable($table, $style=\PDO::FETCH_OBJ);
-	public function selectStar($table, $id, $primary_key='id', $style=\PDO::FETCH_OBJ);
+	// Query Methods
+	public function buildDescribeTable($table);
+	public function buildSelectQuery($column, $table, array $conditions=array(), array $orders=array());
+	public function buildInsertQuery($table, array $columns);
+	public function buildUpdateQuery($table, array $columns, $primary_key='id');
+	public function buildDeleteQuery($table, $primary_key='id');
 	
-	// Traversal Methods
-	public function traverseInit($table, array $conditions, array $values, array $orders, $primary_key='id');
-	public function traverseReset();
-	public function traverseNext();
-	public function traverseOffset($offset, array $values);
-	public function traverseCount();
+	// Generation Methods
+	public function buildWhereClause(array $conditions=array());
+	public function buildOrderClause(array $orders=array());
+	public function buildLimitClause($limit=1, $offset=0);
 	
 	// Conditional Predicate Methods
 	public function buildEqualCondition($column, $negate=FALSE);

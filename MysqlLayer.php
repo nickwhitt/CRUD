@@ -10,179 +10,125 @@
 
 namespace CRUD;
 class MysqlLayer extends DatabaseLayer {
-	protected $traverse_stmt;
+	/* Query Methods */
 	
 	/**
-	 * Executes Insert statement
+	 * Builds a describe table query
 	 *
 	 * @param str $table
-	 * @param array $columns
-	 * @param array $values
-	 * @return int
+	 * @return str
 	 */
-	public function insert($table, array $columns, array $values) {
-		if (empty($columns) OR empty($values)) {
-			throw new \Exception('Cannot insert when columns or values are empty');
-		}
-		
-		$this->run(
-			sprintf(
-				'insert into %s (%s) values (%s)',
-				$table,
-				implode(', ', $columns),
-				implode(',', array_fill(0, count($columns), '?'))
-			),
-			$values
-		);
-		
-		return $this->conn->lastInsertId();
+	public function buildDescribeTable($table) {
+		return sprintf('describe `%s`', $table);
 	}
 	
 	/**
-	 * Executes Update statement
+	 * Builds a select query
 	 *
-	 * @param str $table
-	 * @param int $id
-	 * @param array $columns
-	 * @param array $values
-	 * @param str $primary_key
-	 * @return bool
-	 */
-	public function update($table, $id, array $columns, array $values, $primary_key='id') {
-		if (empty($columns) OR empty($values)) {
-			throw new \Exception('Cannot update when columns or values are empty');
-		}
-		if (!$id OR !$primary_key) {
-			throw new \Exception('Cannot update without a primary key');
-		}
-		
-		$values[] = $id;
-		return (bool) $this->run(
-			sprintf(
-				'update %s set %s=? where %s = ? limit 1',
-				$table,
-				implode('=?, ', $columns),
-				$primary_key
-			),
-			$values
-		)->rowCount();
-	}
-	
-	/**
-	 * Executes a Delete statement
-	 *
-	 * @param str $table
-	 * @param int $id
-	 * @param str $primary_key
-	 * @return bool
-	 */
-	public function delete($table, $id, $primary_key='id') {
-		if (!$id OR !$primary_key) {
-			throw new \Exception('Cannot delete without a primary key');
-		}
-		
-		return (bool) $this->run(
-			sprintf(
-				'delete from %s where %s = ? limit 1',
-				$table,
-				$primary_key
-			),
-			array($id)
-		)->rowCount();
-	}
-	
-	/**
-	 * Retrieves the table description
-	 *
-	 * Each table column is returned as an array element of the given fetch style.
-	 *
-	 * @param str $table
-	 * @param int $style
-	 * @return array
-	 */
-	public function describeTable($table, $style=\PDO::FETCH_OBJ) {
-		return $this->run(sprintf('describe `%s`', $table))->fetchAll($style);
-	}
-	
-	/**
-	 * Retrieves all fields from a single record
-	 *
-	 * @param str $table
-	 * @param int $id
-	 * @param str $primary_key
-	 * @param int $style
-	 * @return mixed
-	 */
-	public function selectStar($table, $id, $primary_key='id', $style=\PDO::FETCH_OBJ) {
-		return $this->select(
-			'*',
-			$table,
-			array($this->buildEqualCondition($primary_key)),
-			array($id)
-		)->fetch($style);
-	}
-	
-	
-	/* Traversal Methods */
-	
-	/**
-	 * Prepares a PDOStatement for ActiveSet traversal
-	 *
+	 * @param str $column
 	 * @param str $table
 	 * @param array $conditions
-	 * @param array $values
 	 * @param array $orders
+	 * @return str
+	 */
+	public function buildSelectQuery($column, $table, array $conditions=array(), array $orders=array()) {
+		return sprintf(
+			'select %s from `%s` %s %s',
+			$column == '*' ? '*' : "`$column`",
+			$table,
+			$this->buildWhereClause($conditions),
+			$this->buildOrderClause($orders)
+		);
+	}
+	
+	/**
+	 * Builds an insert query
+	 *
+	 * @param str $table
+	 * @param array $columns
+	 * @return str
+	 */
+	public function buildInsertQuery($table, array $columns) {
+		return sprintf(
+			'insert into %s (%s) values (%s)',
+			$table,
+			implode(', ', $columns),
+			implode(',', array_fill(0, count($columns), '?'))
+		);
+	}
+	
+	/**
+	 * Builds an update query
+	 *
+	 * @param str $table
+	 * @param array $columns
+	 * @param str $id
+	 * @return str
+	 */
+	public function buildUpdateQuery($table, array $columns, $primary_key='id') {
+		return sprintf(
+			'update %s set %s=? where %s = ? limit 1',
+			$table,
+			implode('=?, ', $columns),
+			$primary_key
+		);
+	}
+	
+	/**
+	 * Builds a delete query
+	 *
+	 * @param str $table
 	 * @param str $primary_key
-	 * @return void
+	 * @return str
 	 */
-	public function traverseInit($table, array $conditions, array $values, array $orders, $primary_key='id') {
-		$this->traverse_stmt = $this->select($primary_key, $table, $conditions, $values, $orders);
+	public function buildDeleteQuery($table, $primary_key='id') {
+		return sprintf(
+			'delete from %s where %s = ? limit 1',
+			$table,
+			$primary_key
+		);
+	}
+	
+	
+	/* Generation Methods */
+	
+	/**
+	 * Generates the where clause
+	 *
+	 * @param array $conditions
+	 * @return str
+	 */
+	public function buildWhereClause(array $conditions=array()) {
+		return empty($conditions) ? '' : sprintf(
+			'where %s',
+			implode(' and ', $conditions)
+		);
 	}
 	
 	/**
-	 * Initializes the traversal statement result set for iteration
+	 * Generates the order clause
 	 *
-	 * @param void
-	 * @return void
+	 * @param array $orders
+	 * @return str
 	 */
-	public function traverseReset() {
-		$this->traverse_stmt->execute();
+	public function buildOrderClause(array $orders=array()) {
+		return empty($orders) ? '' : sprintf(
+			'order by %s',
+			implode(', ', $orders)
+		);
 	}
 	
 	/**
-	 * Retrieves the next row from the traversal statement
+	 * Generates a limit clause
 	 *
-	 * @param void
-	 * @return mixed primary key
-	 */
-	public function traverseNext() {
-		return ($row = $this->traverse_stmt->fetch(\PDO::FETCH_NUM))
-			? $row[0]
-			: NULL;
-	}
-	
-	/**
-	 * Retrieves a traversal statement row by offset
+	 * Allows for optional $offset of records.
 	 *
+	 * @param int $limit
 	 * @param int $offset
-	 * @param array $values
-	 * @return mixed primary key
+	 * @return str
 	 */
-	public function traverseOffset($offset, array $values) {
-		$stmt = $this->run(sprintf('%s limit %d,1', $this->traverse_stmt->queryString, $offset), $values);
-		return ($row = $stmt->fetch(\PDO::FETCH_NUM))
-			? $row[0]
-			: NULL;
-	}
-	
-	/**
-	 * Retrieves the number of rows from the traversal statement
-	 *
-	 * @param void
-	 * @return int
-	 */
-	public function traverseCount() {
-		return $this->traverse_stmt->rowCount();
+	public function buildLimitClause($limit=1, $offset=0) {
+		return sprintf('limit %d,%d', $offset, $limit);
 	}
 	
 	
@@ -258,74 +204,5 @@ class MysqlLayer extends DatabaseLayer {
 	 */
 	public function buildNullCondition($column, $negate=FALSE) {
 		return sprintf('%s is%s null', $column, $negate == FALSE ? '' : ' not');
-	}
-	
-	
-	/* Protected Methods */
-	
-	/**
-	 * Generates the where clause
-	 *
-	 * @param array $conditions
-	 * @return str
-	 */
-	protected function buildWhereClause(array $conditions=array()) {
-		return empty($conditions) ? '' : sprintf(
-			'where %s',
-			implode(' and ', $conditions)
-		);
-	}
-	
-	/**
-	 * Generates the order clause
-	 *
-	 * @param array $orders
-	 * @return str
-	 */
-	protected function buildOrderClause(array $orders=array()) {
-		return empty($orders) ? '' : sprintf(
-			'order by %s',
-			implode(', ', $orders)
-		);
-	}
-	
-	/**
-	 * Executes a Prepared Statement
-	 *
-	 * @param str $sql
-	 * @param array $params
-	 * @return PDOStatement
-	 */
-	protected function run($sql, array $params=array()) {
-		$stmt = $this->conn->prepare($sql);
-		if (!$stmt->execute($params)) {
-			// throw driver specific error
-			$error = $stmt->errorInfo();
-			throw new \Exception($error[2]);
-		}
-		
-		return $stmt;
-	}
-	
-	/**
-	 * Executes a prepared select statement
-	 *
-	 * @param str $column
-	 * @param str $table
-	 * @param array $conditions
-	 * @param array $values
-	 * @param array $orders
-	 * @return PODStatement
-	 */
-	protected function select($column, $table, array $conditions=array(), array $values=array(), array $orders=array()) {
-		return $this->run(sprintf(
-				'select %s from `%s` %s %s',
-				$column == '*' ? '*' : "`$column`",
-				$table,
-				$this->buildWhereClause($conditions),
-				$this->buildOrderClause($orders)
-			),
-			$values
-		);
 	}
 }
